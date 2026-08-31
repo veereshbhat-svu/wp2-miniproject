@@ -12,12 +12,8 @@ import {
 } from 'lucide-react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useReports } from '../context/ReportContext';
-
-const badgeMap = {
-  normal:   { bg: '#ecfdf5', color: '#059669', border: '#a7f3d0', label: 'NORMAL' },
-  warning:  { bg: '#fffbeb', color: '#d97706', border: '#fde68a', label: 'WARNING' },
-  abnormal: { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', label: 'ABNORMAL' },
-};
+import StatusBadge from '../components/StatusBadge';
+import EmptyState from '../components/EmptyState';
 
 const Report = () => {
   const navigate = useNavigate();
@@ -28,39 +24,13 @@ const Report = () => {
   // Empty state if no reports exist in the system yet
   if (!reports || reports.length === 0) {
     return (
-      <div className="page-enter" style={{ maxWidth: '640px', margin: '60px auto', textAlign: 'center' }}>
-        <div
-          style={{
-            background: '#fff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '16px',
-            padding: '48px 32px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-          }}
-        >
-          <div
-            style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              background: '#eef2ff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 20px',
-            }}
-          >
-            <FileQuestion size={32} color="#4338ca" />
-          </div>
-
-          <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#1a1a2e', marginBottom: '8px' }}>
-            No Diagnostic Reports Available
-          </h2>
-          <p style={{ fontSize: '14px', color: '#6b7280', lineHeight: 1.6, marginBottom: '28px' }}>
-            There are currently no urinalysis reports generated. Run a test strip analysis from the
-            <strong> Analysis</strong> page to simulate 10-pad computer vision segmentation and view continuous diagnostic reports.
-          </p>
-
+      <EmptyState
+        icon={FileQuestion}
+        iconColor="#4338ca"
+        iconBg="#eef2ff"
+        title="No Diagnostic Reports Available"
+        description="There are currently no urinalysis reports generated. Run a test strip analysis from the Analysis page to simulate 10-pad computer vision segmentation and view continuous diagnostic reports."
+        actions={
           <button
             onClick={() => navigate('/analyze')}
             style={{
@@ -80,8 +50,8 @@ const Report = () => {
           >
             <Scan size={16} /> Go to Analysis Page
           </button>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
@@ -417,7 +387,6 @@ const Report = () => {
           <tbody>
             {currentReport.analytes?.map((a, i) => {
               const last = i === currentReport.analytes.length - 1;
-              const b = badgeMap[a.status?.toLowerCase()] || badgeMap.normal;
               const td = {
                 padding: '12px 20px',
                 fontSize: '13px',
@@ -444,20 +413,7 @@ const Report = () => {
                   </td>
                   <td style={{ ...td, color: '#64748b' }}>{a.ref}</td>
                   <td style={td}>
-                    <span
-                      style={{
-                        background: b.bg,
-                        color: b.color,
-                        border: `1px solid ${b.border}`,
-                        padding: '3px 9px',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        display: 'inline-block',
-                      }}
-                    >
-                      {b.label}
-                    </span>
+                    <StatusBadge status={a.status} uppercase />
                   </td>
                 </tr>
               );

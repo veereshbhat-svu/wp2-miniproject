@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { fetchInitialReports, saveReport as apiSaveReport } from '../services/api';
 
 export const ReportContext = createContext();
 
@@ -24,6 +25,31 @@ export const ReportProvider = ({ children }) => {
     }
   });
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState(null);
+
+  // Initial load from JSON API if localStorage is empty
+  useEffect(() => {
+    async function loadSeedData() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved || JSON.parse(saved).length === 0) {
+        setIsLoading(true);
+        try {
+          const initialReports = await fetchInitialReports();
+          setReports(initialReports);
+          setApiError(null);
+        } catch (err) {
+          console.error('Failed to load initial reports from API', err);
+          setApiError('Failed to load reports from JSON API');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadSeedData();
+  }, []);
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
@@ -44,7 +70,12 @@ export const ReportProvider = ({ children }) => {
     }
   }, [activeTriage]);
 
-  const addReport = (newReport) => {
+  const addReport = async (newReport) => {
+    try {
+      await apiSaveReport(newReport);
+    } catch (err) {
+      console.warn('API saveReport notice:', err);
+    }
     setReports((prev) => [newReport, ...prev]);
   };
 
@@ -80,6 +111,8 @@ export const ReportProvider = ({ children }) => {
         getReportById,
         getReportsByPatient,
         clearAllReports,
+        isLoading,
+        apiError,
       }}
     >
       {children}

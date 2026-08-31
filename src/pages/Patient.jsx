@@ -3,12 +3,11 @@ import { ArrowLeft, History, FileText, Scan, AlertCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useReports } from '../context/ReportContext';
+import StatusBadge from '../components/StatusBadge';
+import EmptyState from '../components/EmptyState';
+import ChartTooltip from '../components/ChartTooltip';
 
-const badgeMap = {
-  Normal:   { bg: '#ecfdf5', color: '#059669', border: '#a7f3d0' },
-  Abnormal: { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
-  Warning:  { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
-};
+const card = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px' };
 
 const Patient = () => {
   const navigate = useNavigate();
@@ -18,7 +17,6 @@ const Patient = () => {
   const patientId = id || 'P-8219';
   const patientReports = getReportsByPatient(patientId);
 
-  // If no reports found for this specific patient
   const hasRecords = patientReports.length > 0;
 
   // Extract chart data from patient's actual reports (in chronological order)
@@ -34,26 +32,6 @@ const Patient = () => {
       testId: r.id,
     };
   });
-
-  const card = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px' };
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div style={{ background: '#1a1a2e', padding: '12px 16px', borderRadius: '8px', border: '1px solid #374151', color: '#fff' }}>
-          <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#9ca3af', fontWeight: 500 }}>{label}</p>
-          {payload.map((p, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', marginBottom: '4px' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.color }} />
-              <span style={{ color: '#d1d5db' }}>{p.name}:</span>
-              <span style={{ fontWeight: 600 }}>{p.value} {p.name === 'pH' ? '' : 'mg/dL'}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="page-enter" style={{ maxWidth: '920px', margin: '0 auto' }}>
@@ -102,43 +80,30 @@ const Patient = () => {
       </div>
 
       {!hasRecords ? (
-        <div style={{ ...card, padding: '48px 32px', textAlign: 'center' }}>
-          <div
-            style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              background: '#fef2f2',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px',
-            }}
-          >
-            <AlertCircle size={28} color="#dc2626" />
-          </div>
-          <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a2e', marginBottom: '6px' }}>
-            No Test Records Found for {patientId}
-          </h3>
-          <p style={{ fontSize: '14px', color: '#6b7280', maxWidth: '440px', margin: '0 auto 20px', lineHeight: 1.5 }}>
-            This patient does not have any recorded colorimetric urinalysis tests in the local database yet.
-          </p>
-          <button
-            onClick={() => navigate('/analyze')}
-            style={{
-              background: '#4338ca',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '10px 20px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Start Analysis for {patientId}
-          </button>
-        </div>
+        <EmptyState
+          icon={AlertCircle}
+          iconColor="#dc2626"
+          iconBg="#fef2f2"
+          title={`No Test Records Found for ${patientId}`}
+          description="This patient does not have any recorded colorimetric urinalysis tests in the local database yet."
+          actions={
+            <button
+              onClick={() => navigate('/analyze')}
+              style={{
+                background: '#4338ca',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '10px 20px',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Start Analysis for {patientId}
+            </button>
+          }
+        />
       ) : (
         <>
           {/* Chart Section */}
@@ -156,7 +121,7 @@ const Patient = () => {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} dy={10} />
                   <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ paddingTop: '16px', fontSize: '12px' }} iconType="circle" />
                   <Line yAxisId="left" type="monotone" dataKey="glucose" name="Glucose (mg/dL)" stroke="#4338ca" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
                   <Line yAxisId="left" type="monotone" dataKey="protein" name="Protein (mg/dL)" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
@@ -185,7 +150,6 @@ const Patient = () => {
               </thead>
               <tbody>
                 {patientReports.map((test, i) => {
-                  const b = badgeMap[test.status] || badgeMap.Normal;
                   const last = i === patientReports.length - 1;
                   return (
                     <tr
@@ -207,19 +171,7 @@ const Patient = () => {
                         {test.clinicalNote || 'Routine Screening'}
                       </td>
                       <td style={{ padding: '12px 20px' }}>
-                        <span
-                          style={{
-                            background: b.bg,
-                            color: b.color,
-                            border: `1px solid ${b.border}`,
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                          }}
-                        >
-                          {test.status}
-                        </span>
+                        <StatusBadge status={test.status} />
                       </td>
                       <td style={{ padding: '12px 20px', textAlign: 'right' }}>
                         <button

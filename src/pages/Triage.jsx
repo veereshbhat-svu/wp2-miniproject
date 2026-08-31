@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AlertCircle,
   CheckCircle2,
@@ -14,8 +14,9 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useReports } from '../context/ReportContext';
+import { fetchTriagePresets } from '../services/api';
 
-const symptomPresets = [
+const defaultSymptomPresets = [
   'Dysuria / Burning Micturition',
   'Frequent Urgency',
   'Cloudy / Turbid Urine',
@@ -26,7 +27,7 @@ const symptomPresets = [
   'Pelvic Discomfort',
 ];
 
-const sampleCases = [
+const defaultSampleCases = [
   {
     label: 'Preset: Acute UTI Case',
     name: 'Rahul Sharma',
@@ -74,6 +75,22 @@ const sampleCases = [
 const Triage = () => {
   const navigate = useNavigate();
   const { setActiveTriage } = useReports();
+
+  const [symptomPresets, setSymptomPresets] = useState(defaultSymptomPresets);
+  const [sampleCases, setSampleCases] = useState(defaultSampleCases);
+
+  useEffect(() => {
+    async function loadPresets() {
+      try {
+        const data = await fetchTriagePresets();
+        if (data.symptoms && data.symptoms.length > 0) setSymptomPresets(data.symptoms);
+        if (data.triagePresets && data.triagePresets.length > 0) setSampleCases(data.triagePresets);
+      } catch (err) {
+        console.warn('Using default triage presets (API fallback)', err);
+      }
+    }
+    loadPresets();
+  }, []);
 
   const [formData, setFormData] = useState({
     name: '',

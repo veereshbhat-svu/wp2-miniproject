@@ -16,8 +16,11 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useReports } from '../context/ReportContext';
+import { fetchPadDefinitions, fetchSampleProfiles } from '../services/api';
+import EmptyState from '../components/EmptyState';
+import PadTracker from '../components/PadTracker';
 
-const padDefinitions = [
+const defaultPadDefinitions = [
   { id: 'GLU', name: 'Glucose', color: '#65a30d', sampleHex: '#84cc16' },
   { id: 'PRO', name: 'Protein', color: '#ca8a04', sampleHex: '#eab308' },
   { id: 'BIL', name: 'Bilirubin', color: '#ea580c', sampleHex: '#f97316' },
@@ -30,7 +33,7 @@ const padDefinitions = [
   { id: 'LEU', name: 'Leucocytes', color: '#4f46e5', sampleHex: '#6366f1' },
 ];
 
-const sampleProfiles = [
+const defaultSampleProfiles = [
   {
     key: 'normal',
     name: 'Normal Screening Profile',
@@ -128,7 +131,27 @@ const Analysis = () => {
   const [logs, setLogs] = useState([]);
   const [activePad, setActivePad] = useState(-1);
   const [progress, setProgress] = useState(0);
-  const [createdReport, setCreatedReport] = useState(null);
+  const [, setCreatedReport] = useState(null);
+
+  const [padDefinitions, setPadDefinitions] = useState(defaultPadDefinitions);
+  const [sampleProfiles, setSampleProfiles] = useState(defaultSampleProfiles);
+
+  // Fetch pad definitions and sample profiles from JSON API
+  useEffect(() => {
+    async function loadApiData() {
+      try {
+        const [pads, profiles] = await Promise.all([
+          fetchPadDefinitions(),
+          fetchSampleProfiles(),
+        ]);
+        if (pads && pads.length > 0) setPadDefinitions(pads);
+        if (profiles && profiles.length > 0) setSampleProfiles(profiles);
+      } catch (err) {
+        console.warn('Using default diagnostic profiles & pads (API fallback)', err);
+      }
+    }
+    loadApiData();
+  }, []);
 
   const logsEndRef = useRef(null);
 
@@ -281,31 +304,14 @@ const Analysis = () => {
   // GATE: Check if Triage is completed first
   if (!activeTriage && step === 'upload') {
     return (
-      <div className="page-enter" style={{ maxWidth: '680px', margin: '40px auto' }}>
-        <div style={{ ...cardStyle, padding: '48px 36px', textAlign: 'center' }}>
-          <div
-            style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              background: '#fef3c7',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 20px',
-            }}
-          >
-            <ClipboardType size={32} color="#d97706" />
-          </div>
-
-          <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#1a1a2e', marginBottom: '8px' }}>
-            Clinical Triage Intake Required
-          </h2>
-          <p style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.6, marginBottom: '28px' }}>
-            Hospital protocol mandates that every patient must complete the <strong>Clinical Intake & NLP Triage Assessment</strong> before performing automated urine test strip analysis.
-          </p>
-
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+      <EmptyState
+        icon={ClipboardType}
+        iconColor="#d97706"
+        iconBg="#fef3c7"
+        title="Clinical Triage Intake Required"
+        description="Hospital protocol mandates that every patient must complete the Clinical Intake & NLP Triage Assessment before performing automated urine test strip analysis."
+        actions={
+          <>
             <button
               onClick={() => navigate('/triage')}
               style={{
@@ -344,9 +350,9 @@ const Analysis = () => {
             >
               <Zap size={14} /> Quick Demo Triage
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
     );
   }
 
@@ -594,36 +600,8 @@ const Analysis = () => {
                   </div>
                 </div>
 
-                {/* Strip visual mockup */}
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    background: '#ffffff',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    border: '1px solid #e5e7eb',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
-                  }}
-                >
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#9ca3af', marginRight: '6px' }}>
-                    PADS:
-                  </span>
-                  {padDefinitions.map((pad, idx) => (
-                    <div
-                      key={pad.id}
-                      title={`Pad ${idx + 1}: ${pad.name}`}
-                      style={{
-                        width: '18px',
-                        height: '28px',
-                        borderRadius: '3px',
-                        backgroundColor: pad.sampleHex,
-                        border: '1px solid rgba(0,0,0,0.1)',
-                      }}
-                    />
-                  ))}
-                </div>
+                {/* Strip visual mockup - Reusable PadTracker Component */}
+                <PadTracker pads={padDefinitions} mode="strip" />
               </div>
               {errors.image && <div style={errorStyle}><AlertCircle size={12} /> {errors.image}</div>}
             </div>
@@ -700,82 +678,8 @@ const Analysis = () => {
                 />
               </div>
 
-              {/* 10-Pad Visual Tracker */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(10, 1fr)',
-                  gap: '8px',
-                  background: '#ffffff',
-                  padding: '16px',
-                  borderRadius: '10px',
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
-                }}
-              >
-                {padDefinitions.map((pad, index) => {
-                  const isDone = activePad >= index;
-                  const isCurrent = activePad === index;
-                  return (
-                    <div
-                      key={pad.id}
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: '100%',
-                          height: '52px',
-                          backgroundColor: pad.sampleHex,
-                          borderRadius: '6px',
-                          position: 'relative',
-                          border: isCurrent
-                            ? '3px solid #22c55e'
-                            : isDone
-                            ? '2px solid #10b981'
-                            : '1px solid #cbd5e1',
-                          boxShadow: isCurrent ? '0 0 10px rgba(34, 197, 94, 0.5)' : 'none',
-                          transition: 'all 0.2s',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        {isDone && (
-                          <div
-                            style={{
-                              background: 'rgba(0,0,0,0.5)',
-                              color: '#fff',
-                              borderRadius: '50%',
-                              width: '18px',
-                              height: '18px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '10px',
-                            }}
-                          >
-                            ✓
-                          </div>
-                        )}
-                      </div>
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          color: isDone ? '#1e293b' : '#94a3b8',
-                        }}
-                      >
-                        {pad.id}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              {/* 10-Pad Visual Tracker - Reusable PadTracker Component */}
+              <PadTracker pads={padDefinitions} activePad={activePad} mode="grid" />
             </div>
 
             {/* Console Log Terminal */}
@@ -799,15 +703,17 @@ const Analysis = () => {
                   gap: '8px',
                   color: '#94a3b8',
                   marginBottom: '12px',
-                  borderBottom: '1px solid #1e293b',
                   paddingBottom: '8px',
+                  borderBottom: '1px solid #1e293b',
                 }}
               >
-                <Terminal size={14} /> <span>Software Vision Engine Console</span>
+                <Terminal size={14} />
+                <span style={{ fontSize: '11px', fontWeight: 600 }}>COLORIMETRY PIPELINE EXECUTION STREAM</span>
               </div>
-              {logs.map((log, i) => (
-                <div key={i} style={{ marginBottom: '5px', lineHeight: 1.45 }}>
-                  {log}
+              {logs.map((log, index) => (
+                <div key={index} style={{ marginBottom: '6px', lineHeight: 1.4 }}>
+                  <span style={{ color: '#64748b', marginRight: '8px' }}>[{index + 1}]</span>
+                  <span>{log}</span>
                 </div>
               ))}
               <div ref={logsEndRef} />
@@ -815,81 +721,40 @@ const Analysis = () => {
           </div>
         )}
 
-        {/* STEP 3: ANALYSIS COMPLETE */}
-        {step === 'complete' && createdReport && (
-          <div style={{ textAlign: 'center', padding: '40px 32px' }}>
+        {/* STEP 3: SCAN COMPLETE & REDIRECT */}
+        {step === 'complete' && (
+          <div style={{ padding: '48px 32px', textAlign: 'center' }}>
             <div
               style={{
-                width: '68px',
-                height: '68px',
+                width: '64px',
+                height: '64px',
                 borderRadius: '50%',
                 background: '#ecfdf5',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 16px',
+                margin: '0 auto 20px',
               }}
             >
-              <CheckCircle size={36} color="#059669" />
+              <CheckCircle size={32} color="#059669" />
             </div>
 
-            <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#1a1a2e', marginBottom: '6px' }}>
-              Analysis Completed Successfully!
+            <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#1a1a2e', marginBottom: '8px' }}>
+              Colorimetric Quantification Complete!
             </h3>
-            <p style={{ fontSize: '14px', color: '#6b7280', maxWidth: '540px', margin: '0 auto 20px', lineHeight: 1.6 }}>
-              All 10 reagent pads segmented and mapped to continuous analyte concentrations for Patient{' '}
-              <strong>{createdReport.patientName}</strong> ({createdReport.patient}).
+            <p style={{ fontSize: '14px', color: '#6b7280', maxWidth: '460px', margin: '0 auto 24px', lineHeight: 1.5 }}>
+              Computer vision segmentation and ML continuous concentration mapping completed for 10 reagent pads.
             </p>
-
-            {/* Quick Result Pill */}
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '16px',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '10px',
-                padding: '12px 24px',
-                marginBottom: '28px',
-              }}
-            >
-              <div>
-                <span style={{ fontSize: '12px', color: '#94a3b8' }}>Test ID: </span>
-                <strong style={{ fontSize: '14px', color: '#1e293b' }}>{createdReport.id}</strong>
-              </div>
-              <div style={{ width: '1px', height: '18px', background: '#cbd5e1' }} />
-              <div>
-                <span style={{ fontSize: '12px', color: '#94a3b8' }}>Classification: </span>
-                <span
-                  style={{
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    background: createdReport.status === 'Normal' ? '#ecfdf5' : '#fef2f2',
-                    color: createdReport.status === 'Normal' ? '#059669' : '#dc2626',
-                  }}
-                >
-                  {createdReport.status}
-                </span>
-              </div>
-              <div style={{ width: '1px', height: '18px', background: '#cbd5e1' }} />
-              <div>
-                <span style={{ fontSize: '12px', color: '#94a3b8' }}>Analytes: </span>
-                <strong style={{ fontSize: '14px', color: '#4338ca' }}>10/10 Quantified</strong>
-              </div>
-            </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
               <button
-                onClick={() => navigate(`/reports/${createdReport.id}`)}
+                onClick={() => navigate('/reports/latest')}
                 style={{
                   background: '#4338ca',
                   color: '#fff',
                   border: 'none',
-                  borderRadius: '9px',
-                  padding: '12px 28px',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
                   fontSize: '14px',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -899,50 +764,30 @@ const Analysis = () => {
                   boxShadow: '0 4px 12px rgba(67, 56, 202, 0.25)',
                 }}
               >
-                <Eye size={16} /> View Digital Diagnostic Report
-              </button>
-
-              <button
-                onClick={() => navigate('/')}
-                style={{
-                  background: '#fff',
-                  color: '#374151',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '9px',
-                  padding: '12px 20px',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                View in Dashboard
+                <Eye size={16} /> View Generated Diagnostic Report
               </button>
 
               <button
                 onClick={() => {
                   setStep('upload');
                   setLogs([]);
-                  setActivePad(-1);
-                  setCreatedReport(null);
+                  setProgress(0);
                 }}
                 style={{
                   background: '#fff',
-                  color: '#6b7280',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '9px',
-                  padding: '12px 18px',
+                  color: '#374151',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  padding: '12px 20px',
                   fontSize: '14px',
-                  fontWeight: 500,
+                  fontWeight: 600,
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  gap: '8px',
                 }}
               >
-                <RefreshCw size={15} /> Run Another
+                <RefreshCw size={15} /> Analyze Another Strip
               </button>
             </div>
           </div>

@@ -1,0 +1,234 @@
+{
+  "system": {
+    "version": "2.4.0",
+    "name": "UrineScan Diagnostic Engine",
+    "facility": "K. J. Somaiya Hospital & Research Center",
+    "deviceModel": "UrineScan Software Colorimetry Engine v2.4",
+    "regulatoryStandard": "CDSCO MDR 2017 IVD Guidelines",
+    "lastUpdated": "2026-08-31"
+  },
+  "padDefinitions": [
+    { "id": "GLU", "name": "Glucose", "color": "#65a30d", "sampleHex": "#84cc16", "unit": "mg/dL", "ref": "< 30 mg/dL" },
+    { "id": "PRO", "name": "Protein", "color": "#ca8a04", "sampleHex": "#eab308", "unit": "mg/dL", "ref": "< 15 mg/dL" },
+    { "id": "BIL", "name": "Bilirubin", "color": "#ea580c", "sampleHex": "#f97316", "unit": "mg/dL", "ref": "Negative (< 0.2)" },
+    { "id": "URO", "name": "Urobilinogen", "color": "#db2777", "sampleHex": "#ec4899", "unit": "mg/dL", "ref": "< 1.0 mg/dL" },
+    { "id": "pH",  "name": "pH Level", "color": "#d97706", "sampleHex": "#f59e0b", "unit": "pH", "ref": "5.0 – 8.0" },
+    { "id": "SG",  "name": "Specific Gravity", "color": "#059669", "sampleHex": "#10b981", "unit": "", "ref": "1.005 – 1.030" },
+    { "id": "BLD", "name": "Blood / Hemoglobin", "color": "#dc2626", "sampleHex": "#ef4444", "unit": "Ery/μL", "ref": "Negative (< 5)" },
+    { "id": "KET", "name": "Ketones", "color": "#9333ea", "sampleHex": "#a855f7", "unit": "mg/dL", "ref": "Negative (< 5)" },
+    { "id": "NIT", "name": "Nitrite", "color": "#e11d48", "sampleHex": "#f43f5e", "unit": "", "ref": "Negative" },
+    { "id": "LEU", "name": "Leucocytes", "color": "#4f46e5", "sampleHex": "#6366f1", "unit": "Leu/μL", "ref": "Negative (< 25)" }
+  ],
+  "sampleProfiles": [
+    {
+      "key": "normal",
+      "name": "Normal Screening Profile",
+      "desc": "Healthy physiological baseline across all 10 analytes.",
+      "status": "Normal",
+      "clinicalNote": "Routine urinalysis: all parameters within normal physiological reference intervals.",
+      "analytes": [
+        { "name": "Glucose", "exact": "18.4", "unit": "mg/dL", "ref": "< 30 mg/dL", "status": "normal" },
+        { "name": "Protein", "exact": "8.2", "unit": "mg/dL", "ref": "< 15 mg/dL", "status": "normal" },
+        { "name": "Bilirubin", "exact": "0.12", "unit": "mg/dL", "ref": "Negative (< 0.2)", "status": "normal" },
+        { "name": "Urobilinogen", "exact": "0.45", "unit": "mg/dL", "ref": "< 1.0 mg/dL", "status": "normal" },
+        { "name": "pH", "exact": "6.20", "unit": "pH", "ref": "5.0 – 8.0", "status": "normal" },
+        { "name": "Specific Gravity", "exact": "1.018", "unit": "", "ref": "1.005 – 1.030", "status": "normal" },
+        { "name": "Blood", "exact": "0.0", "unit": "Ery/μL", "ref": "Negative (< 5)", "status": "normal" },
+        { "name": "Ketones", "exact": "1.2", "unit": "mg/dL", "ref": "Negative (< 5)", "status": "normal" },
+        { "name": "Nitrite", "exact": "Negative", "unit": "", "ref": "Negative", "status": "normal" },
+        { "name": "Leucocytes", "exact": "8.5", "unit": "Leu/μL", "ref": "Negative (< 25)", "status": "normal" }
+      ]
+    },
+    {
+      "key": "uti",
+      "name": "Infection / UTI Profile",
+      "desc": "Positive Nitrite with elevated Leucocytes and Hematuria.",
+      "status": "Abnormal",
+      "clinicalNote": "Suspected acute Urinary Tract Infection with pyuria, bacteriuria, and microscopic hematuria.",
+      "analytes": [
+        { "name": "Glucose", "exact": "22.1", "unit": "mg/dL", "ref": "< 30 mg/dL", "status": "normal" },
+        { "name": "Protein", "exact": "34.8", "unit": "mg/dL", "ref": "< 15 mg/dL", "status": "warning" },
+        { "name": "Bilirubin", "exact": "0.18", "unit": "mg/dL", "ref": "Negative (< 0.2)", "status": "normal" },
+        { "name": "Urobilinogen", "exact": "0.65", "unit": "mg/dL", "ref": "< 1.0 mg/dL", "status": "normal" },
+        { "name": "pH", "exact": "7.85", "unit": "pH", "ref": "5.0 – 8.0", "status": "normal" },
+        { "name": "Specific Gravity", "exact": "1.015", "unit": "", "ref": "1.005 – 1.030", "status": "normal" },
+        { "name": "Blood", "exact": "54.2", "unit": "Ery/μL", "ref": "Negative (< 5)", "status": "abnormal" },
+        { "name": "Ketones", "exact": "2.4", "unit": "mg/dL", "ref": "Negative (< 5)", "status": "normal" },
+        { "name": "Nitrite", "exact": "Positive", "unit": "", "ref": "Negative", "status": "abnormal" },
+        { "name": "Leucocytes", "exact": "128.4", "unit": "Leu/μL", "ref": "Negative (< 25)", "status": "abnormal" }
+      ]
+    },
+    {
+      "key": "diabetes",
+      "name": "Diabetic / Glycosuria Profile",
+      "desc": "High continuous Glucose reading and elevated Ketones.",
+      "status": "Warning",
+      "clinicalNote": "Marked glycosuria and moderate ketonuria detected. Glycemic and metabolic review recommended.",
+      "analytes": [
+        { "name": "Glucose", "exact": "185.4", "unit": "mg/dL", "ref": "< 30 mg/dL", "status": "abnormal" },
+        { "name": "Protein", "exact": "14.2", "unit": "mg/dL", "ref": "< 15 mg/dL", "status": "normal" },
+        { "name": "Bilirubin", "exact": "0.15", "unit": "mg/dL", "ref": "Negative (< 0.2)", "status": "normal" },
+        { "name": "Urobilinogen", "exact": "0.52", "unit": "mg/dL", "ref": "< 1.0 mg/dL", "status": "normal" },
+        { "name": "pH", "exact": "5.60", "unit": "pH", "ref": "5.0 – 8.0", "status": "normal" },
+        { "name": "Specific Gravity", "exact": "1.028", "unit": "", "ref": "1.005 – 1.030", "status": "normal" },
+        { "name": "Blood", "exact": "1.5", "unit": "Ery/μL", "ref": "Negative (< 5)", "status": "normal" },
+        { "name": "Ketones", "exact": "16.8", "unit": "mg/dL", "ref": "Negative (< 5)", "status": "warning" },
+        { "name": "Nitrite", "exact": "Negative", "unit": "", "ref": "Negative", "status": "normal" },
+        { "name": "Leucocytes", "exact": "12.0", "unit": "Leu/μL", "ref": "Negative (< 25)", "status": "normal" }
+      ]
+    },
+    {
+      "key": "renal",
+      "name": "Renal / Proteinuria Profile",
+      "desc": "Elevated Protein concentration with high Specific Gravity.",
+      "status": "Abnormal",
+      "clinicalNote": "Significant proteinuria and microhematuria. Renal function panel advised.",
+      "analytes": [
+        { "name": "Glucose", "exact": "24.0", "unit": "mg/dL", "ref": "< 30 mg/dL", "status": "normal" },
+        { "name": "Protein", "exact": "88.5", "unit": "mg/dL", "ref": "< 15 mg/dL", "status": "abnormal" },
+        { "name": "Bilirubin", "exact": "0.10", "unit": "mg/dL", "ref": "Negative (< 0.2)", "status": "normal" },
+        { "name": "Urobilinogen", "exact": "0.40", "unit": "mg/dL", "ref": "< 1.0 mg/dL", "status": "normal" },
+        { "name": "pH", "exact": "6.10", "unit": "pH", "ref": "5.0 – 8.0", "status": "normal" },
+        { "name": "Specific Gravity", "exact": "1.032", "unit": "", "ref": "1.005 – 1.030", "status": "warning" },
+        { "name": "Blood", "exact": "28.4", "unit": "Ery/μL", "ref": "Negative (< 5)", "status": "abnormal" },
+        { "name": "Ketones", "exact": "1.8", "unit": "mg/dL", "ref": "Negative (< 5)", "status": "normal" },
+        { "name": "Nitrite", "exact": "Negative", "unit": "", "ref": "Negative", "status": "normal" },
+        { "name": "Leucocytes", "exact": "16.0", "unit": "Leu/μL", "ref": "Negative (< 25)", "status": "normal" }
+      ]
+    }
+  ],
+  "symptoms": [
+    "Dysuria / Burning Micturition",
+    "Frequent Urgency",
+    "Cloudy / Turbid Urine",
+    "Fever & Chills",
+    "Flank / Lower Back Pain",
+    "Excessive Thirst & Polyuria",
+    "Microscopic / Gross Hematuria",
+    "Pelvic Discomfort"
+  ],
+  "triagePresets": [
+    {
+      "label": "Preset: Acute UTI Case",
+      "name": "Rahul Sharma",
+      "patientId": "P-8219",
+      "age": "42",
+      "gender": "Male",
+      "phone": "9876543210",
+      "bloodGroup": "B+",
+      "duration": "1-3 days",
+      "temp": "100.4",
+      "symptoms": ["Dysuria / Burning Micturition", "Frequent Urgency", "Cloudy / Turbid Urine", "Fever & Chills"],
+      "notes": "Patient reports severe burning sensation during urination, cloudy urine, and mild intermittent fever for 2 days. Suspected urinary tract infection.",
+      "targetProfile": "uti"
+    },
+    {
+      "label": "Preset: Diabetic Follow-up",
+      "name": "Priya Desai",
+      "patientId": "P-5510",
+      "age": "56",
+      "gender": "Female",
+      "phone": "9820112233",
+      "bloodGroup": "O+",
+      "duration": "4-7 days",
+      "temp": "98.6",
+      "symptoms": ["Excessive Thirst & Polyuria"],
+      "notes": "Known type-2 diabetic patient presenting for routine quarterly metabolic screening. Complaints of mild fatigue, increased thirst, and frequent nocturia.",
+      "targetProfile": "diabetes"
+    },
+    {
+      "label": "Preset: Healthy Routine",
+      "name": "Amit Patel",
+      "patientId": "P-1045",
+      "age": "29",
+      "gender": "Male",
+      "phone": "9123456789",
+      "bloodGroup": "A+",
+      "duration": "< 24 hours",
+      "temp": "98.4",
+      "symptoms": [],
+      "notes": "Annual pre-employment routine physical examination. Patient is asymptomatic with no urinary complaints or chronic health conditions.",
+      "targetProfile": "normal"
+    }
+  ],
+  "initialReports": [
+    {
+      "id": "KJS-8219",
+      "patientName": "Rahul Sharma",
+      "patient": "P-8219",
+      "patientAge": "42 yrs",
+      "patientGender": "Male",
+      "facility": "K. J. Somaiya Hospital & Research Center",
+      "requestedBy": "Dr. A. Sharma (Pathology)",
+      "date": "31 Aug 2026",
+      "time": "11:30 AM",
+      "status": "Abnormal",
+      "clinicalNote": "Suspected Acute Urinary Tract Infection (UTI): Suspected acute Urinary Tract Infection with pyuria, bacteriuria, and microscopic hematuria.",
+      "analytes": [
+        { "name": "Glucose", "exact": "22.1", "unit": "mg/dL", "ref": "< 30 mg/dL", "status": "normal" },
+        { "name": "Protein", "exact": "34.8", "unit": "mg/dL", "ref": "< 15 mg/dL", "status": "warning" },
+        { "name": "Bilirubin", "exact": "0.18", "unit": "mg/dL", "ref": "Negative (< 0.2)", "status": "normal" },
+        { "name": "Urobilinogen", "exact": "0.65", "unit": "mg/dL", "ref": "< 1.0 mg/dL", "status": "normal" },
+        { "name": "pH", "exact": "7.85", "unit": "pH", "ref": "5.0 – 8.0", "status": "normal" },
+        { "name": "Specific Gravity", "exact": "1.015", "unit": "", "ref": "1.005 – 1.030", "status": "normal" },
+        { "name": "Blood", "exact": "54.2", "unit": "Ery/μL", "ref": "Negative (< 5)", "status": "abnormal" },
+        { "name": "Ketones", "exact": "2.4", "unit": "mg/dL", "ref": "Negative (< 5)", "status": "normal" },
+        { "name": "Nitrite", "exact": "Positive", "unit": "", "ref": "Negative", "status": "abnormal" },
+        { "name": "Leucocytes", "exact": "128.4", "unit": "Leu/Leu", "ref": "Negative (< 25)", "status": "abnormal" }
+      ],
+      "deviceModel": "UrineScan Software Colorimetry Engine v2.4"
+    },
+    {
+      "id": "KJS-5510",
+      "patientName": "Priya Desai",
+      "patient": "P-5510",
+      "patientAge": "56 yrs",
+      "patientGender": "Female",
+      "facility": "K. J. Somaiya Hospital & Research Center",
+      "requestedBy": "Dr. S. Kulkarni (Endocrinology)",
+      "date": "30 Aug 2026",
+      "time": "02:15 PM",
+      "status": "Warning",
+      "clinicalNote": "Suspected Diabetic Glycosuria: Marked glycosuria and moderate ketonuria detected. Glycemic and metabolic review recommended.",
+      "analytes": [
+        { "name": "Glucose", "exact": "185.4", "unit": "mg/dL", "ref": "< 30 mg/dL", "status": "abnormal" },
+        { "name": "Protein", "exact": "14.2", "unit": "mg/dL", "ref": "< 15 mg/dL", "status": "normal" },
+        { "name": "Bilirubin", "exact": "0.15", "unit": "mg/dL", "ref": "Negative (< 0.2)", "status": "normal" },
+        { "name": "Urobilinogen", "exact": "0.52", "unit": "mg/dL", "ref": "< 1.0 mg/dL", "status": "normal" },
+        { "name": "pH", "exact": "5.60", "unit": "pH", "ref": "5.0 – 8.0", "status": "normal" },
+        { "name": "Specific Gravity", "exact": "1.028", "unit": "", "ref": "1.005 – 1.030", "status": "normal" },
+        { "name": "Blood", "exact": "1.5", "unit": "Ery/μL", "ref": "Negative (< 5)", "status": "normal" },
+        { "name": "Ketones", "exact": "16.8", "unit": "mg/dL", "ref": "Negative (< 5)", "status": "warning" },
+        { "name": "Nitrite", "exact": "Negative", "unit": "", "ref": "Negative", "status": "normal" },
+        { "name": "Leucocytes", "exact": "12.0", "unit": "Leu/μL", "ref": "Negative (< 25)", "status": "normal" }
+      ],
+      "deviceModel": "UrineScan Software Colorimetry Engine v2.4"
+    },
+    {
+      "id": "KJS-1045",
+      "patientName": "Amit Patel",
+      "patient": "P-1045",
+      "patientAge": "29 yrs",
+      "patientGender": "Male",
+      "facility": "K. J. Somaiya Hospital & Research Center",
+      "requestedBy": "Dr. A. Sharma (Pathology)",
+      "date": "29 Aug 2026",
+      "time": "09:45 AM",
+      "status": "Normal",
+      "clinicalNote": "Normal Routine Baseline: Routine urinalysis: all parameters within normal physiological reference intervals.",
+      "analytes": [
+        { "name": "Glucose", "exact": "18.4", "unit": "mg/dL", "ref": "< 30 mg/dL", "status": "normal" },
+        { "name": "Protein", "exact": "8.2", "unit": "mg/dL", "ref": "< 15 mg/dL", "status": "normal" },
+        { "name": "Bilirubin", "exact": "0.12", "unit": "mg/dL", "ref": "Negative (< 0.2)", "status": "normal" },
+        { "name": "Urobilinogen", "exact": "0.45", "unit": "mg/dL", "ref": "< 1.0 mg/dL", "status": "normal" },
+        { "name": "pH", "exact": "6.20", "unit": "pH", "ref": "5.0 – 8.0", "status": "normal" },
+        { "name": "Specific Gravity", "exact": "1.018", "unit": "", "ref": "1.005 – 1.030", "status": "normal" },
+        { "name": "Blood", "exact": "0.0", "unit": "Ery/μL", "ref": "Negative (< 5)", "status": "normal" },
+        { "name": "Ketones", "exact": "1.2", "unit": "mg/dL", "ref": "Negative (< 5)", "status": "normal" },
+        { "name": "Nitrite", "exact": "Negative", "unit": "", "ref": "Negative", "status": "normal" },
+        { "name": "Leucocytes", "exact": "8.5", "unit": "Leu/μL", "ref": "Negative (< 25)", "status": "normal" }
+      ],
+      "deviceModel": "UrineScan Software Colorimetry Engine v2.4"
+    }
+  ]
+}
