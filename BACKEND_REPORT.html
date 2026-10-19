@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UrineScan - Backend Architecture & Technical Documentation</title>
+  <style>
+    @media print {
+      body { background: #fff !important; padding: 0 !important; }
+      .no-print { display: none !important; }
+      .page-break { page-break-before: always; }
+      table { page-break-inside: avoid; }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.5;
+      color: #111827;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 30px 16px;
+    }
+    .document-page {
+      max-width: 820px;
+      margin: 0 auto 30px;
+      background: #ffffff;
+      padding: 48px 56px;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      border: 1px solid #e5e7eb;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      text-align: center;
+      margin: 0 0 4px;
+      color: #111827;
+    }
+    h2.subtitle {
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+      margin: 0 0 24px;
+      color: #1f2937;
+    }
+    .group-section {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .group-section h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+    .member-name {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 4px 0;
+      color: #111827;
+    }
+    .repo-link {
+      margin-top: 14px;
+      font-size: 14px;
+    }
+    .repo-link strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #2563eb;
+    }
+    .repo-link a {
+      color: #2563eb;
+      text-decoration: underline;
+      font-weight: 600;
+    }
+    h2.section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2563eb;
+      margin: 28px 0 12px;
+      border-bottom: 1.5px solid #dbeafe;
+      padding-bottom: 4px;
+    }
+    h3.sub-section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1d4ed8;
+      margin: 20px 0 8px;
+    }
+    p {
+      font-size: 13.5px;
+      color: #374151;
+      text-align: justify;
+      margin: 0 0 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 24px;
+      font-size: 12.5px;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 10px 14px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: #f1f5f9;
+      font-weight: 700;
+      color: #0f172a;
+      width: 22%;
+    }
+    td ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    td li {
+      margin-bottom: 4px;
+    }
+    .code-box {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 16px;
+      border-radius: 6px;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 11.5px;
+      overflow-x: auto;
+      margin: 12px 0 18px;
+      line-height: 1.45;
+    }
+    .caption {
+      font-style: italic;
+      font-size: 12px;
+      color: #64748b;
+      margin: 4px 0 16px;
+      text-align: center;
+    }
+    .print-btn-bar {
+      max-width: 820px;
+      margin: 0 auto 16px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .btn {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="print-btn-bar no-print">
+    <button class="btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  </div>
+
+  <div class="document-page">
+    <h1>UrineScan</h1>
+    <h2 class="subtitle">AI-Assisted Point-of-Care Urinalysis Diagnostic Engine (Backend Architecture)</h2>
+
+    <div class="group-section">
+      <h3>Group Members</h3>
+      <div class="member-name">Rithvik Sharma: 1601424001</div>
+      <div class="member-name">Veeresh Bhat: 16010424014</div>
+      <div class="repo-link">
+        <strong>Github repo link:</strong>
+        <a href="https://github.com/veereshbhat-svu/wp2-miniproject.git" target="_blank">
+          https://github.com/veereshbhat-svu/wp2-miniproject.git
+        </a>
+      </div>
+    </div>
+
+    <h2 class="section-title">Problem Statement</h2>
+    <p>
+      Design and implement a scalable, regulation-aligned backend service for UrineScan built with <strong>Node.js, Express.js, and MongoDB (via Mongoose ODM)</strong>, that transitions the platform from a simulated client-side prototype to a persistent, clinical-grade Point-of-Care (POC) diagnostic engine. The backend replaces static mock data and ephemeral <code>localStorage</code> with a robust multi-collection MongoDB database, implements an on-device computer vision colorimetry algorithm that extracts and quantifies real RGB pixel data from uploaded 10-pad reagent strips, provides an automated clinical decision-support engine that correlates chemical analytes with triage symptoms, generates cryptographically verified scannable QR codes for smartphone verification across the hospital LAN, streams real-time sensor telemetry via Server-Sent Events (SSE), and produces official hospital-branded diagnostic PDF reports.
+    </p>
+    <p>
+      The purpose of the backend is to establish an end-to-end medical data pipeline for hospital pathology departments (modeled after <em>K. J. Somaiya Hospital & Research Center</em>). It ensures that every urinalysis test is strictly associated with a verified patient record, automatically classifies multi-condition risks (such as Acute Bacterial UTI, Glomerular Nephropathy, and Diabetic Ketoacidosis), prevents data tampering via SHA-256 cryptographic integrity hashes, and facilitates interoperability through simulated HL7/FHIR v4 transmissions to hospital Health Information Systems (HIS).
+    </p>
+
+    <h2 class="section-title">Scenario</h2>
+    <p>
+      A lab technician opens UrineScan and lands on the consolidated Point-of-Care Dashboard. When entering a new clinical triage intake, the patient’s clinical presentation, temperature, duration, and symptom chips are sent to the backend via <code>POST /api/triage/submit</code>. The server evaluates the presentation via an algorithmic NLP classification engine, stores the persistent <code>Triage</code> document in MongoDB, and suggests an appropriate clinical profile with risk levels and guidance.
+    </p>
+    <p>
+      Moving to the Analysis stage, the technician can upload an actual photo of a 10-pad urine strip. The backend's <strong>Colorimetry Vision Engine (built on Jimp)</strong> slices the strip geometry into 10 reagent zones, computes center ROI average RGB vectors, and maps them against standard Multistix 10-SG calibration curves using Euclidean color distance. Concurrently, the <strong>Clinical Decision Support Engine</strong> evaluates multi-analyte cross-interactions (such as Nitrite + Leukocytes for UTI, or Protein + Specific Gravity for Renal Glomerular Strain).
+    </p>
+    <p>
+      The backend computes a SHA-256 integrity hash, generates a mobile-scannable QR code linking to <code>http://&lt;LAN-IP&gt;:5000/verify/:reportId</code>, and commits the records atomically into MongoDB. Pathologists can stream live telemetry, download official hospital-branded PDF lab reports, or scan the on-screen QR code from any smartphone to verify the certificate against live hospital database records.
+    </p>
+
+    <h2 class="section-title">Functional Requirements</h2>
+
+    <h3 class="sub-section-title">1. Urinalysis Report & Clinical Intelligence Service (/api/reports)</h3>
+    <table>
+      <tr>
+        <th>Architecture</th>
+        <td>
+          <ul>
+            <li>Implemented in <code>controllers/reportController.js</code> and mounted on <code>routes/reportRoutes.js</code>.</li>
+            <li>Handles complete report lifecycle, cryptographic hashing, QR synthesis, and clinical risk evaluation.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>REST Endpoints</th>
+        <td>
+          <ul>
+            <li><code>GET /api/reports</code>: Paginated list with filtering by <code>status</code> (Normal, Warning, Abnormal) and text <code>search</code> (patient name, patient ID, report ID).</li>
+            <li><code>GET /api/reports/:id</code>: Retrieves single report by reportId or ObjectId, auto-generating QR code if missing.</li>
+            <li><code>POST /api/reports</code>: Persists a newly generated urinalysis report, evaluates clinical risk indices, hashes payload, and links to Patient.</li>
+            <li><code>DELETE /api/reports/:id</code>: Deletes a test record from MongoDB.</li>
+            <li><code>DELETE /api/reports/clear-all</code>: Clears all reports for dashboard reset.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>Mongoose Schema</th>
+        <td>
+          <ul>
+            <li><code>models/Report.js</code>: includes <code>reportId</code> (indexed), <code>patient</code> (ObjectId ref to Patient), <code>patientId</code>, <code>patientName</code>, <code>status</code>, <code>clinicalNote</code>, <code>analytes</code> (array of 10 items with exact value, unit, reference interval, status, and hex color), <code>clinicalRisk</code>, <code>verificationHash</code>, <code>qrCodeDataUrl</code>, and <code>hisSync</code>.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>Clinical Decision Support</th>
+        <td>
+          <ul>
+            <li><strong>UTI Probability (0–100%)</strong>: Nitrite (+) [40 pts], Leukocytes abnormal [35 pts], Hematuria [10 pts], alkaline pH [10 pts], plus Dysuria/Fever symptoms.</li>
+            <li><strong>Renal Strain (0–100%)</strong>: Proteinuria [50 pts], high Specific Gravity ≥ 1.028 [15 pts], Blood [20 pts], and Flank/Back pain.</li>
+            <li><strong>DKA Risk (0–100%)</strong>: Glycosuria > 100 mg/dL [50 pts], Ketonuria > 15 mg/dL [40 pts], and Polyuria/Thirst.</li>
+            <li>Auto-generates pathophysiological findings and physician clinical guidance.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>Security & Verification</th>
+        <td>
+          <ul>
+            <li>256-bit cryptographic digest using <code>crypto.createHash('sha256')</code> across reportId, patientId, analytes, and date.</li>
+            <li>High-contrast QR code data URLs generated via <code>qrcode</code> embedding LAN verification links.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>PDF Generation</th>
+        <td>
+          <ul>
+            <li><code>GET /api/reports/:id/pdf</code> pipes dynamic <code>pdfkit</code> stream with hospital branding, patient details, styled 10-analyte table, risk dials, QR code, and digital pathologist signature lines.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>HIS Integration</th>
+        <td>
+          <ul>
+            <li><code>POST /api/reports/:id/send-his</code> simulates encrypted HL7 FHIR v4 transmission with transaction IDs (<code>HL7-TX-...</code>) and MongoDB audit timestamps.</li>
+          </ul>
+        </td>
+      </tr>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h3 class="sub-section-title">2. True-Vision Colorimetric Strip Processing (/api/reports/analyze-strip)</h3>
+    <table>
+      <tr>
+        <th>Architecture</th>
+        <td>
+          <ul>
+            <li>Implemented in <code>utils/colorimetryEngine.js</code> and exposed via <code>POST /api/reports/analyze-strip</code>.</li>
+            <li>Replaces client-side timer simulation with real image pixel sampling.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>Image Uploads</th>
+        <td>
+          <ul>
+            <li>Configured with <code>multer</code> disk storage (up to 10MB) for uploaded strip photos, or parses base64-encoded camera snapshots.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>Computer Vision</th>
+        <td>
+          <ul>
+            <li>Loads images via <code>Jimp.read()</code>, detects vertical vs. horizontal orientation, and slices strip into 10 equidistant pad zones with center 50% ROI cropping.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>Color Extraction</th>
+        <td>
+          <ul>
+            <li>Iterates across center ROI pixels to compute true mean RGB vectors <code>[avgR, avgG, avgB]</code> and CSS hex colors (<code>#rrggbb</code>).</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>Color Calibration</th>
+        <td>
+          <ul>
+            <li>Calculates perception-weighted Euclidean color distance: <code>sqrt(2*ΔR² + 4*ΔG² + 3*ΔB²)</code> against Multistix 10-SG calibration reference tiers.</li>
+            <li>Maps each pad to continuous numerical concentration, reference interval, and clinical flag.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>SSE Telemetry</th>
+        <td>
+          <ul>
+            <li><code>GET /api/reports/stream-telemetry</code> opens a live HTTP <code>text/event-stream</code> connection streaming calibration and segmentation progress directly to the frontend.</li>
+          </ul>
+        </td>
+      </tr>
+    </table>
+
+    <h3 class="sub-section-title">3. Patient Management & Longitudinal Analytics (/api/patients, /api/analytics)</h3>
+    <table>
+      <tr>
+        <th>Architecture</th>
+        <td>
+          <ul>
+            <li>Modularized across <code>controllers/patientController.js</code>, <code>controllers/analyticsController.js</code>, and <code>controllers/verifyController.js</code>.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>REST Endpoints</th>
+        <td>
+          <ul>
+            <li><code>GET /api/patients</code>: Lists registered patients with report counts and latest screening status.</li>
+            <li><code>GET /api/patients/:id</code>: Retrieves patient profile and time-series arrays for Recharts line graphs.</li>
+            <li><code>POST /api/patients</code>: Registers or updates patient demographics.</li>
+            <li><code>GET /api/analytics/dashboard</code>: Computes real-time dashboard KPIs.</li>
+            <li><code>GET /verify/:id</code>: Public mobile verification web portal.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>Aggregation Pipeline</th>
+        <td>
+          <ul>
+            <li>Uses MongoDB <code>$group</code> and <code>$sum</code> stages on the <code>Report</code> collection to compute total tests, normal scans, flagged scans, and testing volumes atomically.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>Mobile Verification</th>
+        <td>
+          <ul>
+            <li>Public verification route <code>/verify/:id</code> renders a mobile-responsive hospital verification badge accessible by scanning the QR code with any smartphone camera on the local network.</li>
+          </ul>
+        </td>
+      </tr>
+    </table>
+
+    <h2 class="section-title">Output & Verification Evidence</h2>
+
+    <div class="code-box">
+[DATABASE] Connecting to MongoDB at mongodb://127.0.0.1:27017/urinescan_db
+[DATABASE] Connected to MongoDB successfully!
+[SEED] Seeding 3 authentic hospital reports into MongoDB...
+[SEED] Initial database records seeded successfully with verified QR codes!
+====================================================
+🚀 UrineScan Clinical Diagnostic Server is RUNNING!
+📡 Local API:          http://localhost:5000
+📱 LAN Verification:   http://172.17.18.70:5000/verify/:id
+💻 Frontend Client:    http://localhost:5173
+🏥 Facility:           K. J. Somaiya Hospital Diagnostic Core
+====================================================
+    </div>
+    <div class="caption">Fig. 1 — Terminal output demonstrating Express initialization, active MongoDB connection, auto-seeding, and LAN discovery.</div>
+
+    <div class="code-box">
+{
+  "success": true,
+  "report": {
+    "reportId": "KJS-3993",
+    "patientId": "P-9999",
+    "patientName": "Siddharth Verma",
+    "status": "Abnormal",
+    "clinicalRisk": {
+      "utiScore": 95,
+      "utiRiskLevel": "High",
+      "renalRiskScore": 45,
+      "renalRiskLevel": "Moderate",
+      "dkaScore": 0,
+      "dkaRiskLevel": "Low",
+      "recommendations": [
+        "Immediate midstream urine culture (U/C) & antibiotic sensitivity test advised.",
+        "Consider first-line empirical antibiotic regimen (Nitrofurantoin 100mg BID or Fosfomycin 3g PO)."
+      ]
+    },
+    "verificationHash": "57b3ef1d2347cb028a05e26ecf130b06b9b478d179667794354c03d27453eb26",
+    "qrCodeDataUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+    "deviceModel": "UrineScan Software Colorimetry Engine v2.4"
+  }
+}
+    </div>
+    <div class="caption">Fig. 2 — Automated REST API response showing multi-condition clinical risk evaluation (UTI Score 95% High), SHA-256 hash, and QR synthesis.</div>
+
+  </div>
+
+</body>
+</html>
