@@ -137,6 +137,31 @@ const Triage = () => {
     setNlpResult(null);
   };
 
+  const handlePatientIdChange = (e) => {
+    let val = e.target.value.toUpperCase();
+    // Auto-insert hyphen if user types 'P' followed directly by an alphanumeric character
+    if (/^P[A-Z0-9]/i.test(val)) {
+      val = 'P-' + val.slice(1);
+    }
+    setFormData((prev) => ({ ...prev, patientId: val }));
+    if (touched.patientId) {
+      const pid = val.trim();
+      setErrors((prev) => {
+        const next = { ...prev };
+        if (!pid) {
+          next.patientId = 'Patient ID is required (format: P-XXXX, e.g. P-8219).';
+        } else if (!/^P-/i.test(pid)) {
+          next.patientId = "Patient ID must start with 'P-' followed by a hyphen (e.g. P-8219).";
+        } else if (pid.length < 3 || !/^P-[A-Za-z0-9-]+$/i.test(pid)) {
+          next.patientId = "Patient ID must have an identifier after 'P-' (e.g. P-8219).";
+        } else {
+          delete next.patientId;
+        }
+        return next;
+      });
+    }
+  };
+
   const validate = () => {
     const errs = {};
 
@@ -149,11 +174,14 @@ const Triage = () => {
       errs.name = 'Name should only contain alphabetic characters.';
     }
 
-    // Patient ID Validation
-    if (!formData.patientId.trim()) {
-      errs.patientId = 'Patient ID is required (e.g. P-8219).';
-    } else if (!/^[A-Za-z0-9-]+$/.test(formData.patientId.trim())) {
-      errs.patientId = 'Patient ID must only contain letters, numbers, or hyphens.';
+    // Patient ID Validation - compulsory P- prefix followed by identifier
+    const pid = formData.patientId.trim();
+    if (!pid) {
+      errs.patientId = 'Patient ID is required (format: P-XXXX, e.g. P-8219).';
+    } else if (!/^P-/i.test(pid)) {
+      errs.patientId = "Patient ID must start with 'P-' followed by a hyphen (e.g. P-8219).";
+    } else if (pid.length < 3 || !/^P-[A-Za-z0-9-]+$/i.test(pid)) {
+      errs.patientId = "Patient ID must have an identifier after 'P-' (e.g. P-8219).";
     }
 
     // Age Validation
@@ -392,7 +420,7 @@ const Triage = () => {
                   type="text"
                   placeholder="e.g. P-8219"
                   value={formData.patientId}
-                  onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
+                  onChange={handlePatientIdChange}
                   onBlur={() => handleBlur('patientId')}
                   style={inputStyle(touched.patientId && errors.patientId)}
                 />

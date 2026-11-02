@@ -239,10 +239,28 @@ const Analysis = () => {
     setErrors((prev) => ({ ...prev, image: null }));
   };
 
+  const handlePatientIdChange = (e) => {
+    let val = e.target.value.toUpperCase();
+    if (/^P[A-Z0-9]/i.test(val)) {
+      val = 'P-' + val.slice(1);
+    }
+    setPatientId(val);
+    if (errors.patientId) {
+      setErrors((prev) => ({ ...prev, patientId: null }));
+    }
+  };
+
   const validateAnalysisForm = () => {
     const errs = {};
     if (!patientName.trim()) errs.patientName = 'Patient Full Name is required.';
-    if (!patientId.trim()) errs.patientId = 'Patient ID is required.';
+    const pid = patientId.trim();
+    if (!pid) {
+      errs.patientId = 'Patient ID is required (format: P-XXXX, e.g. P-8219).';
+    } else if (!/^P-/i.test(pid)) {
+      errs.patientId = "Patient ID must start with 'P-' followed by a hyphen (e.g. P-8219).";
+    } else if (pid.length < 3 || !/^P-[A-Za-z0-9-]+$/i.test(pid)) {
+      errs.patientId = "Patient ID must have an identifier after 'P-' (e.g. P-8219).";
+    }
     if (!stripImagePreview && !stripFile && !selectedSampleKey) {
       errs.image = 'A urine test strip image or sample must be selected.';
     }
@@ -588,7 +606,7 @@ const Analysis = () => {
                   type="text"
                   placeholder="e.g. P-8219"
                   value={patientId}
-                  onChange={(e) => setPatientId(e.target.value)}
+                  onChange={handlePatientIdChange}
                   style={inputStyle(errors.patientId)}
                 />
                 {errors.patientId && <div style={errorStyle}><AlertCircle size={12} /> {errors.patientId}</div>}
