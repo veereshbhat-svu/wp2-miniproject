@@ -11,6 +11,7 @@ import triageRoutes from './routes/triageRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import { verifyReportPublic } from './controllers/verifyController.js';
 import { getLocalIpAddress } from './utils/qrGenerator.js';
+import { seedInitialData } from './seed.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
