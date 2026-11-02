@@ -14,8 +14,8 @@ const Patient = () => {
   const { id } = useParams();
   const { getReportsByPatient } = useReports();
 
-  const patientId = id || 'P-8219';
-  const patientReports = getReportsByPatient(patientId);
+  const patientId = id || '';
+  const patientReports = patientId ? getReportsByPatient(patientId) : [];
 
   const hasRecords = patientReports.length > 0;
 
@@ -84,11 +84,15 @@ const Patient = () => {
           icon={AlertCircle}
           iconColor="#dc2626"
           iconBg="#fef2f2"
-          title={`No Test Records Found for ${patientId}`}
-          description="This patient does not have any recorded colorimetric urinalysis tests in the local database yet."
+          title={patientId ? `No Test Records Found for ${patientId}` : 'No Patient Selected'}
+          description={
+            patientId
+              ? 'This patient does not have any recorded colorimetric urinalysis tests in the database yet.'
+              : 'Select a patient from the Dashboard or run an analysis to view longitudinal trend telemetry.'
+          }
           actions={
             <button
-              onClick={() => navigate('/analyze')}
+              onClick={() => navigate(patientId ? '/analyze' : '/')}
               style={{
                 background: '#4338ca',
                 color: '#fff',
@@ -100,7 +104,7 @@ const Patient = () => {
                 cursor: 'pointer',
               }}
             >
-              Start Analysis for {patientId}
+              {patientId ? `Start Analysis for ${patientId}` : 'Go to Dashboard'}
             </button>
           }
         />

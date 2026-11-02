@@ -24,14 +24,19 @@ export async function seedInitialData() {
       return;
     }
 
-    const raw = fs.readFileSync(dataPath, 'utf-8');
+    const raw = fs.readFileSync(dataPath, 'utf-8').replace(/^\uFEFF/, '').trim();
     const diagnosticData = JSON.parse(raw);
     const initialReports = diagnosticData.initialReports || [];
+
+    if (initialReports.length === 0) {
+      console.log('[SEED] No default reports defined. Database remains clean.');
+      return;
+    }
 
     console.log(`[SEED] Seeding ${initialReports.length} authentic hospital reports into MongoDB...`);
 
     for (const r of initialReports) {
-      const patId = r.patient || r.patientId || 'P-1001';
+      const patId = (r.patient || r.patientId || 'P-1001').trim().toUpperCase();
       let patientDoc = await Patient.findOne({ patientId: patId });
 
       if (!patientDoc) {
@@ -59,9 +64,6 @@ export async function seedInitialData() {
         reportId: r.id,
         patient: patientDoc._id,
         patientId: patId,
-        patientName: r.patientName,
-        patientAge: r.patientAge,
-        patientGender: r.patientGender,
         facility: r.facility || 'K. J. Somaiya Hospital & Research Center',
         requestedBy: r.requestedBy || 'Dr. A. Sharma (Pathology)',
         date: r.date,

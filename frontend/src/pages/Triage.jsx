@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useReports } from '../context/ReportContext';
-import { fetchTriagePresets } from '../services/api';
+import { fetchTriagePresets, submitTriage } from '../services/api';
 
 const defaultSymptomPresets = [
   'Dysuria / Burning Micturition',
@@ -287,6 +287,9 @@ const Triage = () => {
         triageDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
         triageTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
       };
+
+      // Persist to MongoDB backend asynchronously
+      submitTriage(formData).catch((err) => console.warn('[TRIAGE_API] Notice:', err));
 
       // Store in global context as the active triaged patient
       setActiveTriage(triageRecord);

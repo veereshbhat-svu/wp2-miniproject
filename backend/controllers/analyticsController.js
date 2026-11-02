@@ -32,7 +32,16 @@ export async function getDashboardAnalytics(req, res) {
     const flaggedScans = warningScans + abnormalScans;
 
     // Timeline throughput data for Dashboard Recharts
-    const recentReports = await Report.find().sort({ createdAt: -1 }).limit(10);
+    const recentReports = await Report.find().sort({ createdAt: -1 }).limit(10).populate('patient');
+    const formattedRecent = recentReports.map((r) => {
+      const obj = r.toJSON();
+      return {
+        ...obj,
+        id: obj.reportId || obj.id,
+        patient: obj.patientId,
+        patientName: r.patient?.name || 'Anonymous Patient',
+      };
+    });
 
     const timeline = [
       { time: '08:00', tests: 0 },
@@ -52,7 +61,7 @@ export async function getDashboardAnalytics(req, res) {
         totalPatients,
       },
       timeline,
-      recentReports,
+      recentReports: formattedRecent,
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

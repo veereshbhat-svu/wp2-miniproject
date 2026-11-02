@@ -1,5 +1,6 @@
 import Patient from '../models/Patient.js';
 import Report from '../models/Report.js';
+import Triage from '../models/Triage.js';
 
 /**
  * List all registered patients with their report counts
@@ -11,7 +12,7 @@ export async function getAllPatients(req, res) {
 
     const result = patients.map((pat) => {
       const patReports = reports.filter(
-        (r) => r.patientId?.toLowerCase() === pat.patientId.toLowerCase()
+        (r) => r.patientId?.toUpperCase() === pat.patientId.toUpperCase()
       );
       return {
         ...pat.toObject(),
@@ -28,26 +29,31 @@ export async function getAllPatients(req, res) {
 }
 
 /**
- * Get single patient details, complete history, and time-series trend data
+ * Get single patient details, complete history, triage intakes, and time-series trend data
+ * Relational join using patientId foreign key across patients, reports, and triages
  */
 export async function getPatientHistory(req, res) {
   try {
     const { id } = req.params;
+    const patId = id.trim().toUpperCase();
 
-    let patient = await Patient.findOne({ patientId: new RegExp(`^${id}$`, 'i') });
-    const reports = await Report.find({ patientId: new RegExp(`^${id}$`, 'i') }).sort({ createdAt: -1 });
+    let patient = await Patient.findOne({ patientId: new RegExp(`^${patId}$`, 'i') });
+    const reports = await Report.find({ patientId: new RegExp(`^${patId}$`, 'i') }).sort({ createdAt: -1 });
+    const triages = await Triage.find({ patientId: new RegExp(`^${patId}$`, 'i') }).sort({ createdAt: -1 });
 
-    if (!patient && reports.length > 0) {
-      patient = {
-        patientId: reports[0].patientId,
-        name: reports[0].patientName,
-        age: parseInt(reports[0].patientAge) || 42,
-        gender: reports[0].patientGender || 'Male',
-      };
+    if (!patient && reports.length === 0 && triages.length === 0) {
+      return res.status(404).json({ success: false, message: 'Patient not found' });
     }
 
-    if (!patient && reports.length === 0) {
-      return res.status(404).json({ success: false, message: 'Patient not found' });
+    if (!patient) {
+      patient = {
+        patientId: patId,
+        name: 'Anonymous Patient',
+        age: 40,
+        gender: 'Male',
+        phone: '',
+        bloodGroup: 'O+',
+      };
     }
 
     // Format historical trend data for Recharts (chronological)
@@ -68,10 +74,20 @@ export async function getPatientHistory(req, res) {
       };
     });
 
+    const formattedReports = reports.map((r) => ({
+      ...r.toJSON(),
+      id: r.reportId,
+      patient: r.patientId,
+      patientName: patient.name,
+      patientAge: `${patient.age} yrs`,
+      patientGender: patient.gender,
+    }));
+
     res.status(200).json({
       success: true,
       patient,
-      reports,
+      reports: formattedReports,
+      triages,
       trendData,
     });
   } catch (err) {
@@ -85,10 +101,11 @@ export async function getPatientHistory(req, res) {
 export async function createOrUpdatePatient(req, res) {
   try {
     const { patientId, name, age, gender, phone, bloodGroup, medicalHistory } = req.body;
+    const patId = patientId.trim().toUpperCase();
 
     const patient = await Patient.findOneAndUpdate(
-      { patientId },
-      { name, age, gender, phone, bloodGroup, medicalHistory },
+      { patientId: patId },
+      { patientId: patId, name, age, gender, phone, bloodGroup, medicalHistory },
       { new: true, upsert: true }
     );
 

@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import {
   getAllReports,
   getReportById,
@@ -11,6 +12,7 @@ import {
   downloadReportPdf,
   deleteReport,
   clearAllReports,
+  getReportQr,
 } from '../controllers/reportController.js';
 
 const router = express.Router();
@@ -18,6 +20,9 @@ const router = express.Router();
 // Configure Multer for test strip photo uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    if (!fs.existsSync('uploads/')) {
+      fs.mkdirSync('uploads/', { recursive: true });
+    }
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
@@ -41,5 +46,6 @@ router.get('/:id', getReportById);
 router.delete('/:id', deleteReport);
 router.post('/:id/send-his', sendToHIS);
 router.get('/:id/pdf', downloadReportPdf);
+router.get('/:id/qr', getReportQr);
 
 export default router;

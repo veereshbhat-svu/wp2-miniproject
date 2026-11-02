@@ -40,23 +40,12 @@ app.get('/', (req, res) => {
     message: 'Welcome to UrineScan POC Urinalysis Engine Backend API',
     facility: 'K. J. Somaiya Hospital & Research Center',
     endpoints: {
-      health: 'GET /api/health',
       reports: 'GET /api/reports',
       patients: 'GET /api/patients',
       analytics: 'GET /api/analytics/dashboard',
       verification: 'GET /verify/:reportId',
     },
     documentation: 'See BACKEND_REPORT.md / BACKEND_REPORT.html',
-  });
-});
-
-// Health Check
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'online',
-    system: 'UrineScan Backend Engine v2.4',
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    timestamp: new Date().toISOString(),
   });
 });
 
@@ -92,11 +81,11 @@ async function startServer() {
 
     app.listen(PORT, '0.0.0.0', () => {
       console.log('====================================================');
-      console.log(`🚀 UrineScan Clinical Diagnostic Server is RUNNING!`);
-      console.log(`📡 Local API:          http://localhost:${PORT}`);
-      console.log(`📱 LAN Verification:   http://${localIp}:${PORT}/verify/:id`);
-      console.log(`💻 Frontend Client:    http://localhost:5173`);
-      console.log(`🏥 Facility:           K. J. Somaiya Hospital Diagnostic Core`);
+      console.log(` UrineScan Clinical Diagnostic Server is RUNNING!`);
+      console.log(` Local API:          http://localhost:${PORT}`);
+      console.log(` LAN Verification:   http://${localIp}:${PORT}/verify/:id`);
+      console.log(` Frontend Client:    http://localhost:5173`);
+      console.log(` Facility:           K. J. Somaiya Hospital Diagnostic Core`);
       console.log('====================================================');
     });
   } catch (err) {

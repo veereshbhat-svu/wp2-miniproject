@@ -42,6 +42,12 @@ const hisSyncSchema = new mongoose.Schema(
   { _id: false }
 );
 
+/**
+ * Report Schema
+ * Urinalysis test strip quantification results and colorimetry output.
+ * patientId is the foreign key referencing the Patient collection.
+ * Patient demographics (name, age, gender) are stored exclusively in the Patient collection.
+ */
 const reportSchema = new mongoose.Schema(
   {
     reportId: {
@@ -51,37 +57,17 @@ const reportSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
-    patient: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Patient',
-      required: false,
-    },
     patientId: {
       type: String,
       required: true,
       trim: true,
+      uppercase: true,
       index: true,
+      ref: 'Patient',
     },
-    patientName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    patientAge: {
-      type: String,
-      default: '42 yrs',
-    },
-    patientGender: {
-      type: String,
-      default: 'Male',
-    },
-    facility: {
-      type: String,
-      default: 'K. J. Somaiya Hospital & Research Center',
-    },
-    requestedBy: {
-      type: String,
-      default: 'Dr. A. Sharma (Pathology)',
+    patient: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Patient',
     },
     date: {
       type: String,
@@ -126,6 +112,14 @@ const reportSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    facility: {
+      type: String,
+      default: 'K. J. Somaiya Hospital & Research Center',
+    },
+    requestedBy: {
+      type: String,
+      default: 'Dr. A. Sharma (Pathology)',
+    },
     deviceModel: {
       type: String,
       default: 'UrineScan Software Colorimetry Engine v2.4',
@@ -141,7 +135,14 @@ reportSchema.virtual('id').get(function () {
   return this.reportId;
 });
 
-// Ensure virtuals are serialized in toJSON
+// Virtual to populate patient details from Patient model using foreign key patientId
+reportSchema.virtual('patientDetails', {
+  ref: 'Patient',
+  localField: 'patientId',
+  foreignField: 'patientId',
+  justOne: true,
+});
+
 reportSchema.set('toJSON', { virtuals: true });
 reportSchema.set('toObject', { virtuals: true });
 

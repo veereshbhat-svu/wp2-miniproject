@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { fetchInitialReports, saveReport as apiSaveReport } from '../services/api';
+import { fetchInitialReports, saveReport as apiSaveReport, clearAllReports as apiClearAllReports } from '../services/api';
 
 export const ReportContext = createContext();
 
@@ -7,14 +7,7 @@ const STORAGE_KEY = 'urinescan_reports_data';
 const TRIAGE_STORAGE_KEY = 'urinescan_active_triage';
 
 export const ReportProvider = ({ children }) => {
-  const [reports, setReports] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [reports, setReports] = useState([]);
 
   const [activeTriage, setActiveTriage] = useState(() => {
     try {
@@ -28,26 +21,25 @@ export const ReportProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
 
-  // Initial load from JSON API if localStorage is empty
+  // Sync directly with MongoDB database on mount: if DB is empty, nothing shows up
   useEffect(() => {
-    async function loadSeedData() {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (!saved || JSON.parse(saved).length === 0) {
-        setIsLoading(true);
-        try {
-          const initialReports = await fetchInitialReports();
-          setReports(initialReports);
-          setApiError(null);
-        } catch (err) {
-          console.error('Failed to load initial reports from API', err);
-          setApiError('Failed to load reports from JSON API');
-        } finally {
-          setIsLoading(false);
-        }
+    async function syncWithBackend() {
+      setIsLoading(true);
+      try {
+        const liveReports = await fetchInitialReports();
+        setReports(liveReports || []);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(liveReports || []));
+        setApiError(null);
+      } catch (err) {
+        console.warn('Could not sync with backend DB:', err);
+        const saved = localStorage.getItem(STORAGE_KEY);
+        setReports(saved ? JSON.parse(saved) : []);
+      } finally {
+        setIsLoading(false);
       }
     }
 
-    loadSeedData();
+    syncWithBackend();
   }, []);
 
   useEffect(() => {
@@ -71,32 +63,35 @@ export const ReportProvider = ({ children }) => {
   }, [activeTriage]);
 
   const addReport = async (newReport) => {
+    let saved = null;
     try {
-      await apiSaveReport(newReport);
+      saved = await apiSaveReport(newReport);
     } catch (err) {
       console.warn('API saveReport notice:', err);
     }
-    setReports((prev) => [newReport, ...prev]);
+    const reportToAdd = saved || newReport;
+    setReports((prev) => [reportToAdd, ...prev.filter((r) => r.id !== reportToAdd.id)]);
   };
 
   const getReportById = (id) => {
     if (!id || id === 'latest') return reports[0] || null;
-    return reports.find((r) => r.id === id) || null;
+    return reports.find((r) => r.id === id || r.reportId === id) || null;
   };
 
   const getReportsByPatient = (patientId) => {
     if (!patientId) return [];
-    return reports.filter((r) => r.patient?.toLowerCase() === patientId.toLowerCase());
+    return reports.filter((r) => (r.patient || r.patientId)?.toLowerCase() === patientId.toLowerCase());
   };
 
-  const clearAllReports = () => {
+  const clearAllReports = async () => {
     setReports([]);
     setActiveTriage(null);
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(TRIAGE_STORAGE_KEY);
+      await apiClearAllReports();
     } catch (e) {
-      console.error('Failed to clear localStorage', e);
+      console.error('Failed to clear localStorage / backend', e);
     }
   };
 

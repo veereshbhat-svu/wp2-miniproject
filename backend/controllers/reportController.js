@@ -1,13 +1,20 @@
 import crypto from 'crypto';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import Report from '../models/Report.js';
 import Patient from '../models/Patient.js';
 import { analyzeStripImage } from '../utils/colorimetryEngine.js';
 import { evaluateClinicalRisk } from '../utils/clinicalRuleEngine.js';
-import { generateReportQrCode } from '../utils/qrGenerator.js';
+import { generateReportQrCode, getLocalIpAddress, getAllLocalIpAddresses } from '../utils/qrGenerator.js';
 import { buildReportPdf } from '../utils/pdfGenerator.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Fetch all reports with filtering, search, and pagination
+ * Uses patientId foreign key to join patient demographics for frontend UI
  */
 export async function getAllReports(req, res) {
   try {
@@ -19,24 +26,52 @@ export async function getAllReports(req, res) {
     }
 
     if (search) {
+      const matchingPatients = await Patient.find({
+        $or: [
+          { name: new RegExp(search, 'i') },
+          { patientId: new RegExp(search, 'i') },
+        ],
+      }).select('patientId');
+      const patientIds = matchingPatients.map((p) => p.patientId);
+
       filter.$or = [
         { reportId: new RegExp(search, 'i') },
         { patientId: new RegExp(search, 'i') },
-        { patientName: new RegExp(search, 'i') },
+        { patientId: { $in: patientIds } },
       ];
     }
 
     const total = await Report.countDocuments(filter);
     const reports = await Report.find(filter)
+      .populate('patient')
       .sort({ createdAt: -1 })
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit));
+
+    // Join with Patient collection so that patientName, patientAge, patientGender are included
+    const formattedReports = await Promise.all(
+      reports.map(async (r) => {
+        let pat = r.patient;
+        if (!pat) {
+          pat = await Patient.findOne({ patientId: r.patientId });
+        }
+        const obj = r.toJSON();
+        return {
+          ...obj,
+          id: obj.reportId || obj.id,
+          patient: obj.patientId,
+          patientName: pat?.name || 'Anonymous Patient',
+          patientAge: pat?.age ? `${pat.age} yrs` : '42 yrs',
+          patientGender: pat?.gender || 'Male',
+        };
+      })
+    );
 
     res.status(200).json({
       success: true,
       total,
       page: Number(page),
-      reports,
+      reports: formattedReports,
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -44,14 +79,14 @@ export async function getAllReports(req, res) {
 }
 
 /**
- * Fetch single report by ID
+ * Fetch single report by ID with patient demographics joined
  */
 export async function getReportById(req, res) {
   try {
     const { id } = req.params;
-    let report = await Report.findOne({ reportId: id });
+    let report = await Report.findOne({ reportId: id }).populate('patient');
     if (!report && id.match(/^[0-9a-fA-F]{24}$/)) {
-      report = await Report.findById(id);
+      report = await Report.findById(id).populate('patient');
     }
 
     if (!report) {
@@ -65,27 +100,44 @@ export async function getReportById(req, res) {
       await report.save();
     }
 
-    res.status(200).json({ success: true, report });
+    let pat = report.patient;
+    if (!pat) {
+      pat = await Patient.findOne({ patientId: report.patientId });
+    }
+
+    const reportObj = {
+      ...report.toJSON(),
+      id: report.reportId,
+      patient: report.patientId,
+      patientName: pat?.name || 'Anonymous Patient',
+      patientAge: pat?.age ? `${pat.age} yrs` : '42 yrs',
+      patientGender: pat?.gender || 'Male',
+    };
+
+    res.status(200).json({ success: true, report: reportObj });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 }
 
 /**
- * Save / Create new report
+ * Save / Create new report:
+ * 1. Upserts patient demographics directly into 'patients' collection
+ * 2. Saves test strip analytes & clinical findings into 'reports' collection referencing patientId foreign key
  */
 export async function createReport(req, res) {
   try {
     const data = req.body;
     const reportId = data.reportId || data.id || `KJS-${Math.floor(1000 + Math.random() * 9000)}`;
+    const patId = (data.patientId || data.patient || 'P-1001').trim().toUpperCase();
 
-    // 1. Evaluate or enrich Clinical Decision Support
+    // 1. Evaluate Clinical Decision Support
     const clinicalRisk = data.clinicalRisk || evaluateClinicalRisk(data.analytes, data.triageData);
 
     // 2. Cryptographic Data Verification Hash (SHA-256)
     const verificationPayload = JSON.stringify({
       reportId,
-      patientId: data.patient || data.patientId,
+      patientId: patId,
       analytes: data.analytes,
       date: data.date,
     });
@@ -94,26 +146,29 @@ export async function createReport(req, res) {
     // 3. Generate QR code
     const { qrDataUrl } = await generateReportQrCode(reportId);
 
-    // 4. Ensure or link Patient model
-    let patientDoc = null;
-    const patId = data.patient || data.patientId || 'P-1001';
-    patientDoc = await Patient.findOne({ patientId: patId });
+    // 4. Ensure or update Patient model in 'patients' collection
+    let patientDoc = await Patient.findOne({ patientId: patId });
     if (!patientDoc) {
       patientDoc = await Patient.create({
         patientId: patId,
         name: data.patientName || 'Anonymous Patient',
         age: parseInt(data.patientAge) || 40,
         gender: data.patientGender || 'Male',
+        phone: data.phone || '',
+        bloodGroup: data.bloodGroup || 'O+',
       });
+    } else if (data.patientName && (!patientDoc.name || patientDoc.name === 'Anonymous Patient')) {
+      patientDoc.name = data.patientName;
+      if (data.patientAge) patientDoc.age = parseInt(data.patientAge) || patientDoc.age;
+      if (data.patientGender) patientDoc.gender = data.patientGender;
+      await patientDoc.save();
     }
 
+    // 5. Create report in 'reports' collection using patientId as foreign key (no redundant demographics)
     const newReport = new Report({
       reportId,
       patient: patientDoc._id,
-      patientId: patId,
-      patientName: data.patientName || patientDoc.name,
-      patientAge: data.patientAge || `${patientDoc.age} yrs`,
-      patientGender: data.patientGender || patientDoc.gender,
+      patientId: patientDoc.patientId, // Foreign Key
       facility: data.facility || 'K. J. Somaiya Hospital & Research Center',
       requestedBy: data.requestedBy || 'Dr. A. Sharma (Pathology)',
       date: data.date || new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -130,9 +185,18 @@ export async function createReport(req, res) {
 
     await newReport.save();
 
+    const reportObj = {
+      ...newReport.toJSON(),
+      id: newReport.reportId,
+      patient: newReport.patientId,
+      patientName: patientDoc.name,
+      patientAge: `${patientDoc.age} yrs`,
+      patientGender: patientDoc.gender,
+    };
+
     res.status(201).json({
       success: true,
-      report: newReport,
+      report: reportObj,
     });
   } catch (err) {
     console.error('Create report error:', err);
@@ -146,23 +210,39 @@ export async function createReport(req, res) {
 export async function analyzeStrip(req, res) {
   try {
     let imageSource = null;
+    let imagePreview = null;
 
     if (req.file) {
       imageSource = req.file.path;
+      imagePreview = `/uploads/${req.file.filename}`;
     } else if (req.body.imageBase64) {
       const base64Data = req.body.imageBase64.replace(/^data:image\/\w+;base64,/, '');
       imageSource = Buffer.from(base64Data, 'base64');
+      imagePreview = req.body.imageBase64;
+    } else if (req.body.sampleKey) {
+      const samplePath = path.resolve(__dirname, '..', 'uploads', `strip-${req.body.sampleKey}.png`);
+      if (fs.existsSync(samplePath)) {
+        imageSource = samplePath;
+        imagePreview = `/uploads/strip-${req.body.sampleKey}.png`;
+      }
     }
 
     if (!imageSource) {
       return res.status(400).json({ success: false, message: 'No urine test strip image provided.' });
     }
 
+    let triageData = req.body.triageData;
+    if (typeof triageData === 'string') {
+      try {
+        triageData = JSON.parse(triageData);
+      } catch {}
+    }
+
     // 1. Run actual image colorimetric processing
     const cvResult = await analyzeStripImage(imageSource);
 
     // 2. Run clinical risk evaluation
-    const clinicalRisk = evaluateClinicalRisk(cvResult.analytes, req.body.triageData || null);
+    const clinicalRisk = evaluateClinicalRisk(cvResult.analytes, triageData || null);
 
     // 3. Determine overall status
     const hasAbnormal = cvResult.analytes.some((a) => a.status === 'abnormal');
@@ -174,6 +254,8 @@ export async function analyzeStrip(req, res) {
       status: overallStatus,
       analytes: cvResult.analytes,
       boundingBoxes: cvResult.boundingBoxes,
+      imageDimensions: cvResult.imageDimensions,
+      imagePreview,
       logs: cvResult.logs,
       clinicalRisk,
     });
@@ -257,9 +339,9 @@ export async function sendToHIS(req, res) {
 export async function downloadReportPdf(req, res) {
   try {
     const { id } = req.params;
-    let report = await Report.findOne({ reportId: id });
+    let report = await Report.findOne({ reportId: id }).populate('patient');
     if (!report && id.match(/^[0-9a-fA-F]{24}$/)) {
-      report = await Report.findById(id);
+      report = await Report.findById(id).populate('patient');
     }
 
     if (!report) {
@@ -273,10 +355,22 @@ export async function downloadReportPdf(req, res) {
       qrDataUrl = qrRes.qrDataUrl;
     }
 
+    let pat = report.patient;
+    if (!pat) {
+      pat = await Patient.findOne({ patientId: report.patientId });
+    }
+
+    const reportWithPat = {
+      ...report.toJSON(),
+      patientName: pat?.name || 'Anonymous Patient',
+      patientAge: pat?.age ? `${pat.age} yrs` : '42 yrs',
+      patientGender: pat?.gender || 'Male',
+    };
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=Urinalysis_Report_${report.reportId}.pdf`);
 
-    const pdfDoc = buildReportPdf(report, qrDataUrl);
+    const pdfDoc = buildReportPdf(reportWithPat, qrDataUrl);
     pdfDoc.pipe(res);
     pdfDoc.end();
   } catch (err) {
@@ -310,6 +404,37 @@ export async function clearAllReports(req, res) {
   }
 }
 
+/**
+ * Fetch QR Code data URL & direct mobile LAN URL for Wi-Fi scanning
+ */
+export async function getReportQr(req, res) {
+  try {
+    const { id } = req.params;
+    const { ip } = req.query;
+    let report = await Report.findOne({ reportId: id });
+    if (!report && id.match(/^[0-9a-fA-F]{24}$/)) {
+      report = await Report.findById(id);
+    }
+
+    if (!report) {
+      return res.status(404).json({ success: false, message: 'Report not found' });
+    }
+
+    const { qrDataUrl, verifyUrl, ip: resolvedIp } = await generateReportQrCode(report.reportId, ip || null);
+
+    res.status(200).json({
+      success: true,
+      reportId: report.reportId,
+      qrDataUrl,
+      verifyUrl,
+      lanIp: resolvedIp,
+      availableIps: getAllLocalIpAddresses(),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
+
 export default {
   getAllReports,
   getReportById,
@@ -320,4 +445,5 @@ export default {
   downloadReportPdf,
   deleteReport,
   clearAllReports,
+  getReportQr,
 };

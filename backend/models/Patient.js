@@ -1,5 +1,10 @@
 import mongoose from 'mongoose';
 
+/**
+ * Patient Schema
+ * Stores patient demographics and identity information.
+ * patientId serves as the primary unique business key.
+ */
 const patientSchema = new mongoose.Schema(
   {
     patientId: {
@@ -7,6 +12,7 @@ const patientSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
+      uppercase: true,
       index: true,
     },
     name: {
